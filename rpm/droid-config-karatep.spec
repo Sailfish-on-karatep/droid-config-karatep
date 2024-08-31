@@ -7,6 +7,8 @@
 %define vendor_pretty Lenovo
 %define device_pretty K6 Note
 
+%define droid_target_aarch64 1
+
 # Community HW adaptations need this
 %define community_adaptation 1
 
