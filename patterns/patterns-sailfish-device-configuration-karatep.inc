@@ -33,9 +33,12 @@ Requires: patterns-sailfish-consumer-generic
 # For Mozilla location services (online)
 Requires: geoclue-provider-mlsdb
 
+# Add voice recorder
+Requires: sailfish-audiorecorder
+
 # Devices with 2G or more memory should also include this booster
 # to improve camera startup times and the like
-#Requires: mapplauncherd-booster-silica-qt5-media
+Requires: mapplauncherd-booster-silica-qt5-media
 
 %description -n patterns-sailfish-device-configuration-karatep
 Pattern with packages for karatep configurations
