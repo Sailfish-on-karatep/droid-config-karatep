@@ -67,9 +67,12 @@ Requires: jolla-devicelock-daemon-encsfa
 # For GPS
 Requires: geoclue-provider-hybris
 
+# Telephony
+Requires: ofono-ril-binder-plugin
+
 # For FM radio on some QCOM devices
-#Requires: qt5-qtmultimedia-plugin-mediaservice-irisradio
-#Requires: jolla-mediaplayer-radio
+Requires: qt5-qtmultimedia-plugin-mediaservice-irisradio
+Requires: jolla-mediaplayer-radio
 
 # NFC support
 # 1. binder plugin requires Android 8 or a newer base
