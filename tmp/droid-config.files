@@ -79,6 +79,7 @@
 /etc/mce/60-fingerprint-sensor.conf
 /etc/ofono/ril_subscription.d/dual-sim.conf
 /etc/ofono/ril_subscription.conf
+/odm/lib64/libandroidicu.so
 /lib/systemd/system/local-fs.target.wants/system-etc-ld.config.28.txt.mount.
 /lib/systemd/system/system-etc-ld.config.28.txt.mount
 /usr/libexec/droid-hybris/system/etc/ld.config.28.txt
