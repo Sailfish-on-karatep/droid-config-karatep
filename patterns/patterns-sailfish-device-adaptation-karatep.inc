@@ -71,7 +71,7 @@ Requires: geoclue-provider-hybris
 Requires: ofono-ril-binder-plugin
 
 # Bluetooth
-#Requires: bluebinder
+Requires: bluebinder
 
 # Fingerprint
 #Requires: sailfish-devicelock-fpd
