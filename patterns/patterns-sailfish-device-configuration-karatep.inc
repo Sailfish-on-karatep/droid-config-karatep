@@ -34,11 +34,14 @@ Requires: patterns-sailfish-consumer-generic
 Requires: geoclue-provider-mlsdb
 
 # Add voice recorder
-Requires: sailfish-audiorecorder
+#Requires: sailfish-audiorecorder
+
+# Check binder
+#Requires: libgbinder-tools package
 
 # Devices with 2G or more memory should also include this booster
 # to improve camera startup times and the like
-Requires: mapplauncherd-booster-silica-qt5-media
+#Requires: mapplauncherd-booster-silica-qt5-media
 
 %description -n patterns-sailfish-device-configuration-karatep
 Pattern with packages for karatep configurations

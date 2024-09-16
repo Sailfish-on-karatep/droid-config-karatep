@@ -71,10 +71,10 @@ Requires: geoclue-provider-hybris
 Requires: ofono-ril-binder-plugin
 
 # Bluetooth
-Requires: bluebinder
+#Requires: bluebinder
 
 # Fingerprint
-Requires: sailfish-devicelock-fpd
+#Requires: sailfish-devicelock-fpd
 
 # For FM radio on some QCOM devices
 Requires: qt5-qtmultimedia-plugin-mediaservice-irisradio
