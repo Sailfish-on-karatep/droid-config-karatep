@@ -78,26 +78,14 @@ fi
 ### end 50_oneshot
 ### begin 60_ssu
 if [ "$SSU_RELEASE_TYPE" = "rnd" ]; then
-    [ -n "@RNDRELEASE@" ] && ssu release -r @RNDRELEASE@
-    [ -n "@RNDFLAVOUR@" ] && ssu flavour @RNDFLAVOUR@
-    # RELEASE is reused in RND setups with parallel release structures
-    # this makes sure that an image created from such a structure updates from there
-    [ -n "@RELEASE@" ] && ssu set update-version @RELEASE@
+    [ -n "@RELEASE@" ] && ssu release -r @RELEASE@
+    [ -n "@FLAVOUR@" ] && ssu flavour @FLAVOUR@
     ssu mode 2
 else
     [ -n "@RELEASE@" ] && ssu release @RELEASE@
     ssu mode 4
 fi
 ### end 60_ssu
-### begin 70_sdk-domain
-
-export SSU_DOMAIN=@RNDFLAVOUR@
-
-if [ "$SSU_RELEASE_TYPE" = "release" ] && [[ "$SSU_DOMAIN" = "public-sdk" ]];
-then
-    ssu domain sailfish
-fi
-### end 70_sdk-domain
 ### begin 90_accept_unsigned_packages
 sed -i /etc/zypp/zypp.conf \
     -e '/^# pkg_gpgcheck =/ c \
