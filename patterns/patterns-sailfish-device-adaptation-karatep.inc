@@ -73,8 +73,30 @@ Requires: ofono-ril-binder-plugin
 # Bluetooth
 Requires: bluebinder
 
-# Fingerprint
-#Requires: sailfish-devicelock-fpd
+# Fingerprint (FPC 1020)
+#
+# The hardware side is already in place on karatep and needs nothing from us:
+# the kernel has CONFIG_INPUT_FPC_1020=y (drivers/input/misc/fpc1020_tee_qsee4.c,
+# IRQ thread irq/16-soc:fpc1), and the vendor HAL
+# /vendor/bin/hw/android.hardware.biometrics.fingerprint@2.0-service is started
+# by droid-hal-init and registers
+# android.hardware.biometrics.fingerprint@2.1::IBiometricsFingerprint.
+#
+# sailfish-fpd is Jolla's fingerprint daemon, but it needs a closed,
+# per-device sailfish-fpd-slave package that does not exist for karatep.
+# sailfish-fpd-community implements the same org.sailfishos.fingerprint1 D-Bus
+# API and talks to the HIDL service itself through libhybris, so it replaces
+# it -- its spec carries "Provides: sailfish-fpd", which is what satisfies
+# sailfish-devicelock-fpd below. Requiring it by name is deliberate: without
+# that, the dependency could equally be resolved by Jolla's sailfish-fpd from
+# the 'jolla' repo, which would then sit there with no slave and never work.
+#
+# Built from hybris/mw/sailfish-fpd-community (see bin/build-fpd.sh for the
+# Android library and bin/build-fpd-rpm.sh for the two RPMs). fake_crypt is
+# NOT needed here -- it is only for keymaster 4, and karatep declares
+# keymaster 3.0 in device/lenovo/karate-common/manifest.xml.
+Requires: sailfish-fpd-community
+Requires: sailfish-devicelock-fpd
 
 # For FM radio on some QCOM devices
 Requires: qt5-qtmultimedia-plugin-mediaservice-irisradio
