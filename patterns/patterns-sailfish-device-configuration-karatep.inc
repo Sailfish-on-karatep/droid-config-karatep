@@ -36,6 +36,25 @@ Requires: geoclue-provider-mlsdb
 # Add voice recorder
 #Requires: sailfish-audiorecorder
 
+# First-party applications not pulled in by patterns-sailfish-consumer-generic.
+#
+# The base image already carries store-client (Jolla Store), voicecall-ui-jolla,
+# jolla-camera, jolla-messages, jolla-contacts, jolla-clock, jolla-gallery,
+# jolla-keyboard, jolla-vault and sailfish-browser, so only the PIM/productivity
+# set is missing. Each name below was checked against the SDK target repos with
+# `zypper se --match-exact` before being added -- a name that does not resolve
+# takes the whole adaptation pattern down and aborts the image build with a
+# message that names only the pattern, not the missing package.
+#
+# jolla-weather and jolla-maps are deliberately absent: they are proprietary
+# Jolla applications and are not published in the repos available here.
+Requires: jolla-calendar
+Requires: jolla-email
+Requires: jolla-notes
+Requires: jolla-calculator
+Requires: jolla-mediaplayer
+Requires: sailfish-office
+
 # Check binder
 #Requires: libgbinder-tools package
 
