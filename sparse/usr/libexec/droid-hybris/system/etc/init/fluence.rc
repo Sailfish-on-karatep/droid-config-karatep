@@ -1,0 +1,32 @@
+# karatep: turn on Qualcomm Fluence dual-mic noise suppression for capture.
+#
+# The hardware has two internal analog mics -- AMIC1 (primary, bottom) and
+# AMIC3 (secondary) -- and ro.vendor.audio.sdk.fluencetype=fluence already
+# advertises FLUENCE_DUAL_MIC. The vendor shipped every persist switch off,
+# so capture used the single-mic snd_device (68: handset-mic) and the second
+# mic sat idle.
+#
+# Measured on hardware, 8 s of speech over deliberate background noise,
+# same acoustic conditions, only this property changed:
+#
+#             snd_device            speech     noise floor    SNR
+#   off       68: handset-mic       -27.7 dBFS   -42.4 dBFS   14.7 dB
+#   on        73: dmic-endfire      -25.8 dBFS   -61.8 dBFS   36.0 dB
+#
+# Speech came out 1.9 dB *louder* while the floor dropped 19.4 dB, so this is
+# real dual-mic suppression and not just a quieter input path. The dual-mic
+# ACDB calibration is present and healthy: a 2-channel capture selects
+# 115: handset-stereo-dmic-ef and returns two independent mic signals
+# (high-frequency L/R correlation 0.05).
+#
+# post-fs-data, not post-fs: persistent properties are loaded from /data
+# during post-fs-data, and setting a persist.* property before that gets
+# overwritten by the stored value.
+#
+# Only the two capture switches are set here. persist.vendor.audio.fluence.
+# voicecall and .speaker drive in-call and speakerphone routing, which cannot
+# be verified on this device yet -- there is only a dummy SIM -- so they are
+# deliberately left alone until a real call can be tested.
+on post-fs-data
+    setprop persist.vendor.audio.fluence.audiorec true
+    setprop persist.vendor.audio.fluence.voicerec true
