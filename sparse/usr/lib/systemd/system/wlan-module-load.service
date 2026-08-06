@@ -21,9 +21,15 @@ Conflicts=shutdown.target actdead.target
 # and with the ordering correct the first modprobe succeeds. If it ever needs
 # retrying again, that is a symptom of something else taking the SoC first --
 # find that instead of adding retries back.
+#
+# macaddrsetup.sh must run BEFORE the modprobe, not as its own unit: prima reads
+# the platform MAC exactly once, in hdd_wlan_startup(), at module init. Making it
+# an ExecStartPre here means the ordering cannot be got wrong by accident. See
+# the script for the full derivation.
 Type=oneshot
 RemainAfterExit=yes
 ExecStartPre=/bin/touch /dev/wcnss_wlan
+ExecStartPre=/bin/sh /usr/bin/droid/macaddrsetup.sh
 ExecStart=/sbin/modprobe wlan
 ExecStop=/sbin/modprobe -r wlan
 
