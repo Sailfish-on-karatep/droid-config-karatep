@@ -1,0 +1,14 @@
+# karatep: load module-droid-card from our own copy of the audio policy config.
+#
+# arm_droid_default.pa includes this file instead of its own
+# `load-module module-droid-card rate=48000` line when it exists, so this is the
+# sanctioned hook for overriding how the card is loaded. Without `config=`, the
+# module picks the first of /odm/etc, /vendor/etc/audio, /vendor/etc, /system/etc
+# that parses -- here /vendor/etc/audio_policy_configuration.xml, whose
+# "primary input" route does not list the built-in mics. See the comment at the
+# top of the file below for the full story; the copy differs from the vendor file
+# in that one route only.
+#
+# `rate=48000` is kept from the default line -- the codec backend is 48 kHz only
+# ("becf: afe: only 48KHZ sample rate is supported").
+load-module module-droid-card rate=48000 config=/etc/pulse/droid/audio_policy_configuration.xml
