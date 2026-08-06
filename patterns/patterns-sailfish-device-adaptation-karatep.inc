@@ -59,7 +59,22 @@ Requires: usb-moded
 Requires: rfkill
 
 # enable device lock and allow to select untrusted software
-Requires: jolla-devicelock-daemon-encsfa
+#
+# sailfish-devicelock-fpd (pulled in by the Fingerprint block below) REPLACES
+# jolla-devicelock-daemon-encsfa rather than complementing it -- it Conflicts
+# with both jolla-devicelock-daemon-encsfa and jolla-devicelock-plugin-encsfa,
+# and Provides nemo-devicelock-daemon, jolla-devicelock and
+# jolla-devicelock-plugin-encsfa >= 0.1.42 in their place, adding the
+# fingerprint-unlock path on top.
+#
+# Requiring both makes the adaptation pattern uninstallable, and mic fails the
+# whole image with an unhelpful message that names only the pattern:
+#     repo problem: the to be installed
+#     patterns-sailfish-device-configuration-karatep ... requires
+#     'patterns-sailfish-device-adaptation-karatep', but this requirement
+#     cannot be provided
+#
+#Requires: jolla-devicelock-daemon-encsfa
 
 # Enable home encryption
 #Requires: sailfish-device-encryption
