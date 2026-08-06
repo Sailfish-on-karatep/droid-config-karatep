@@ -1,0 +1,28 @@
+# Files removed from the sparse tree after our own sparse/ has been overlaid.
+#
+# droid-configs-device/droid-configs.inc builds the tree by copying, in order,
+# the submodule's sparse trees and then ours, and applies this list last:
+#
+#     copy_files_from %{dcd_path}/sparse
+#     delete_files tmp/droid-config.files delete_file_%{rpm_device}.list 1
+#
+# One path per line, absolute within the image. '#' comments and blank lines
+# are ignored.
+#
+# /etc/ofono/binder.conf
+#   Comes from the mer-hybris/droid-hal-configs submodule and declares
+#   "ExpectSlots = slot1" -- a single SIM. karatep is dual-SIM, and this
+#   adaptation configures both slots itself in sparse/etc/ofono/
+#   ril_subscription.conf ([ril_0] transport=binder:name=slot1, [ril_1]
+#   transport=binder:name=slot2), so upstream's single-slot file has to go.
+#
+#   This was previously done by deleting the file inside the submodule's
+#   working tree. That is an unmanaged edit to an upstream repository: it does
+#   not survive `repo sync`, it exists on no other machine, and it silently
+#   changes what the build produces. This list is the mechanism
+#   droid-configs.inc provides for exactly this case.
+#
+#   If it ever turns out the binder plugin is the right one for this device,
+#   the fix is to delete this list and drop ril_subscription.conf -- not to
+#   touch the submodule.
+/etc/ofono/binder.conf
