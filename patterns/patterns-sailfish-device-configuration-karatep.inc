@@ -40,24 +40,36 @@ Requires: geoclue-provider-mlsdb
 # the UI, which is otherwise awkward on this port.
 Requires: sailfish-audiorecorder
 
-# First-party applications not pulled in by patterns-sailfish-consumer-generic.
+# First-party applications.
 #
-# The base image already carries store-client (Jolla Store), voicecall-ui-jolla,
-# jolla-camera, jolla-messages, jolla-contacts, jolla-clock, jolla-gallery,
-# jolla-keyboard, jolla-vault and sailfish-browser, so only the PIM/productivity
-# set is missing. Each name below was checked against the SDK target repos with
-# `zypper se --match-exact` before being added -- a name that does not resolve
+# Sailfish composes images from patterns rather than package lists (see
+# https://docs.sailfishos.org/Reference/Software_Packaging/Patterns_and_Images),
+# so require the app patterns instead of hand-listing their contents. That way
+# the set tracks whatever Jolla puts in them rather than drifting against a list
+# maintained here.
+#
+#   patterns-sailfish-applications           the base app set: camera, gallery,
+#       browser, clock, contacts, messages, vault, archive, tutorial,
+#       startupwizard, locale, all-translations-pack and the jolla-settings-*
+#       pieces. Mostly already present in the image; required explicitly so it
+#       is a stated dependency rather than an accident of what the base pulls.
+#   patterns-sailfish-store-applications     the Jolla Store apps: calculator,
+#       calendar, email, mediaplayer, notes, office and weather.
+#
+# Both were resolved against the lenovo-karatep-aarch64 target with
+# `zypper install --dry-run` before being added -- a name that does not resolve
 # takes the whole adaptation pattern down and aborts the image build with a
 # message that names only the pattern, not the missing package.
-#
-# jolla-weather and jolla-maps are deliberately absent: they are proprietary
-# Jolla applications and are not published in the repos available here.
-Requires: jolla-calendar
-Requires: jolla-email
-Requires: jolla-notes
-Requires: jolla-calculator
-Requires: jolla-mediaplayer
-Requires: sailfish-office
+Requires: patterns-sailfish-applications
+Requires: patterns-sailfish-store-applications
+
+# Not in either pattern.
+Requires: jolla-settings-system-flashlight
+
+# jolla-maps is genuinely absent from the repos available here and cannot be
+# preinstalled. Weather is not: it ships as sailfish-weather (pulled in by
+# patterns-sailfish-store-applications above), and the earlier note claiming it
+# was unavailable was looking for the wrong package name.
 
 # Check binder
 #Requires: libgbinder-tools package
