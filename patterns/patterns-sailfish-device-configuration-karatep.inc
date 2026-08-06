@@ -33,8 +33,12 @@ Requires: patterns-sailfish-consumer-generic
 # For Mozilla location services (online)
 Requires: geoclue-provider-mlsdb
 
-# Add voice recorder
-#Requires: sailfish-audiorecorder
+# Add voice recorder. Jolla's "Recorder" app -- verified to resolve in the
+# device target with `zypper se --match-exact sailfish-audiorecorder` before
+# being enabled, per the note above about unresolvable names taking down the
+# whole pattern. It is also the easiest way to exercise the microphones from
+# the UI, which is otherwise awkward on this port.
+Requires: sailfish-audiorecorder
 
 # First-party applications not pulled in by patterns-sailfish-consumer-generic.
 #
