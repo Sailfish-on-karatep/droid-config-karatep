@@ -1,23 +1,11 @@
 #!/bin/sh
-# Populate /var/lib/bluetooth/board-address for bluebinder_post.sh.
+# Populate /var/lib/bluetooth/board-address for bluebinder_post.sh, which
+# otherwise fails the unit and restart-loops the shared WCNSS radio: karatep
+# sets none of the ro.*bt.bdaddr_path properties it falls back to.
 #
-# bluebinder ships bluebinder_post.sh as ExecStartPost. It first calls this
-# hook, and if /var/lib/bluetooth/board-address still does not exist it falls
-# back to ro.bt.bdaddr_path, ro.vendor.bt.bdaddr_path and
-# persist.vendor.service.bdroid.bdaddr. karatep sets none of those, so without
-# this hook bluebinder_post.sh exits 1 ("Failed to get bluetooth address!"),
-# systemd fails the unit, and Restart=always turns bluebinder into a restart
-# loop that repeatedly powers the shared WCNSS/pronto radio up and down.
-#
-# On karatep the BD address belongs to the QTI BT HAL: /vendor/lib64/libbtnv.so
-# keeps it in /mnt/vendor/persist/bluetooth/.bt_nv.bin as a 3-byte TLV header
-# (tag 0x01, 0x01, len 0x06) followed by the 6-byte address, least significant
-# octet first -- e.g. "01 01 06 ff ee dd cc bb aa" is AA:BB:CC:DD:EE:FF. The real
-# value is per-device and is read off the device at boot, never stored here.
-#
-# This runs as ExecStartPost, so bluebinder has already created the vhci HCI
-# device; prefer the address the kernel actually reports and use the NV file
-# only as a fallback.
+# bluebinder has already created the vhci device by ExecStartPost, so prefer
+# the address the kernel reports. Fallback is the QTI BT HAL's NV blob, where
+# the address follows a 3-byte TLV header, least significant octet first.
 
 ADDRFILE=/var/lib/bluetooth/board-address
 NVFILE=/mnt/vendor/persist/bluetooth/.bt_nv.bin

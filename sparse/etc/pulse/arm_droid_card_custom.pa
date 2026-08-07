@@ -1,29 +1,10 @@
-# karatep: load module-droid-card with two device-specific changes.
+# arm_droid_default.pa loads module-droid-card from this file when it exists.
+# rate=48000 comes from the line it replaces; the codec backend is 48 kHz only.
 #
-# arm_droid_default.pa includes this file in place of its own
-# `load-module module-droid-card rate=48000` line when it exists, so this is the
-# sanctioned hook for overriding how the card is loaded. `rate=48000` is kept
-# from that line: the codec backend is 48 kHz only ("becf: afe: only 48KHZ
-# sample rate is supported").
-#
-# config=
-#   Without it the module takes the first of /odm/etc, /vendor/etc/audio,
-#   /vendor/etc, /system/etc that parses, i.e. the vendor file, whose
-#   "primary input" route does not list the built-in mics -- leaving
-#   source.primary_input with no input-builtin_mic port and every capture
-#   rejected by the HAL. Our copy differs in that one route and nothing else;
-#   see the comment at the top of it.
-#
-# use_legacy_stream_set_parameters=
-#   This HAL does not implement create_audio_patch: it returns -ENOSYS, and
-#   pa_droid_stream_set_route() uses audio patches by default, so every routing
-#   change after a stream was opened failed with
-#       droid-util.c: Failed to create output audio patch
-#                     "primary output"->"Wired Headset" (38)
-#       droid-util.c: Failed to update output stream audio patch (38)
-#   and the stream stayed on whatever device it was opened with. Streams open
-#   on the speaker, so the loudspeaker worked and nothing else ever did:
-#   plugging in a headset moved PulseAudio's port and left the HAL on
-#   snd_device(2: speaker). This option falls back to the legacy
-#   set_parameters("routing=...") on the stream, which this HAL does implement.
+# config=  the vendor policy XML leaves the built-in mics out of the "primary
+#          input" route, so the HAL rejects every capture. Our copy differs
+#          only there.
+# use_legacy_stream_set_parameters=  this HAL returns -ENOSYS from
+#          create_audio_patch, so patch-based rerouting fails and a stream
+#          stays on the device it was opened with (i.e. the speaker).
 load-module module-droid-card rate=48000 config=/etc/pulse/droid/audio_policy_configuration.xml use_legacy_stream_set_parameters=true

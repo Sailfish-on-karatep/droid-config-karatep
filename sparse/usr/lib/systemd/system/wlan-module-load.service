@@ -3,29 +3,12 @@ Description=Load wlan module
 Conflicts=shutdown.target actdead.target
 
 [Service]
-# Type=oneshot, NOT simple. `modprobe wlan` takes ~12 s on this device (the
-# WCNSS/pronto firmware download happens inside module init), and with
-# Type=simple systemd declares the unit "started" the instant it forks, ~12 s
-# before the module actually exists. Anything ordered After= this unit then runs
-# straight into the middle of the module load.
+# Type=oneshot, not simple: `modprobe wlan` takes ~12 s (WCNSS firmware download
+# happens in module init), and Type=simple reported the unit started 12 s before
+# the module existed, which broke the ordering bluebinder.service.d relies on.
 #
-# That is exactly what bluebinder did: BT and WLAN share the same WCNSS SoC, so
-# bluebinder grabbing it mid-load made modprobe fail with ENODEV, no wlan0, and
-# bluebinder itself then restart-looped every 61 s (its TimeoutStartSec=60 plus
-# Restart=always). The historical workaround was to mask bluebinder and start it
-# by hand after boot; with oneshot + the ordering drop-in in
-# bluebinder.service.d/ that is no longer needed and both radios come up
-# unaided.
-#
-# Restart= is deliberately absent: systemd ignores it for Type=oneshot anyway,
-# and with the ordering correct the first modprobe succeeds. If it ever needs
-# retrying again, that is a symptom of something else taking the SoC first --
-# find that instead of adding retries back.
-#
-# macaddrsetup.sh must run BEFORE the modprobe, not as its own unit: prima reads
-# the platform MAC exactly once, in hdd_wlan_startup(), at module init. Making it
-# an ExecStartPre here means the ordering cannot be got wrong by accident. See
-# the script for the full derivation.
+# macaddrsetup.sh must run before the modprobe -- prima reads the platform MAC
+# once, at module init. See the script.
 Type=oneshot
 RemainAfterExit=yes
 ExecStartPre=/bin/touch /dev/wcnss_wlan
