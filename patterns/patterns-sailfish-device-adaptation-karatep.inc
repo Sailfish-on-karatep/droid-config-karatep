@@ -49,6 +49,24 @@ Requires: qtscenegraph-adaptation
 Requires: gstreamer1.0-droid
 Requires: gmp-droid
 
+# Backend for the flashlight/torch.
+#
+# The top menu toggle itself is jolla-settings-system-flashlight, required by
+# patterns-sailfish-device-configuration-karatep. That package does NOT depend
+# on a backend -- its only interesting requires are jolla-settings-system,
+# gstreamer and libresourceqt5 -- so the provider has to be named here or the
+# image ships a toggle with nothing behind it.
+#
+# droidmedia-flashlight provides the virtual capability
+# sailfish-flashlight-provider and drives the torch through droidmedia and the
+# camera HAL, which is where the torch belongs on a hybris port: it needs no
+# udev rule on the /sys/class/leds/led:torch_* nodes. Required by name rather
+# than through the virtual, so it cannot be satisfied by some other provider.
+#
+# Verified on hardware: org.sailfish.flashlight.provider.toggleFlashlight sets
+# led:switch=1 with led:torch_0 and led:torch_1 both at their max of 200.
+Requires: droidmedia-flashlight
+
 # This is needed for notification LEDs
 Requires: mce-plugin-libhybris
 
