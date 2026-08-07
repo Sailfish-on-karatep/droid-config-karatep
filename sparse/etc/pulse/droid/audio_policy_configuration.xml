@@ -1,26 +1,14 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<!-- karatep: verbatim copy of /vendor/etc/audio_policy_configuration.xml with
-     ONE change, loaded by module-droid-card via /etc/pulse/arm_droid_card_custom.pa.
+<!-- karatep: copy of /vendor/etc/audio_policy_configuration.xml, loaded by
+     module-droid-card via /etc/pulse/arm_droid_card_custom.pa.
 
-     "Built-In Mic" and "Built-In Back Mic" have been added to the sources of the
-     <route> whose sink is the "primary input" mix port. The vendor file routes
-     them only to "record_24" and "voip_tx", so the primary input offered nothing
-     but Wired Headset Mic, BT SCO Headset Mic, FM Tuner and Telephony Rx.
+     One intentional difference: "Built-In Mic" and "Built-In Back Mic" are
+     added to the route feeding the "primary input" mix port. Android can pick
+     any mix port that serves AUDIO_SOURCE_MIC, but pulseaudio-modules-droid
+     builds source.primary_input from that one port, so without them it fell
+     back to input-voice_call and the HAL rejected every capture.
 
-     Android copes, because AudioPolicyManager is free to pick any mix port that
-     can serve AUDIO_SOURCE_MIC. pulseaudio-modules-droid is not, because it
-     builds source.primary_input from the primary input mix port alone. With the
-     vendor file it therefore had no input-builtin_mic port at all and fell back
-     to the highest priority available one, input-voice_call. Every capture then
-     reached the HAL as source(4)=AUDIO_SOURCE_VOICE_CALL with device
-     AUDIO_DEVICE_IN_VOICE_CALL, and the HAL refused it ("voice_check_and_set_
-     incall_rec_usecase: As voice call is not active"), so start_input_stream
-     returned -22 in a tight retry loop, no capture PCM was ever opened, and
-     every recording came back as digital silence.
-
-     Keep this file in sync if the vendor partition is ever updated. Diff it
-     against /vendor/etc/audio_policy_configuration.xml; that route is the only
-     intentional difference.
+     Diff against the vendor file if /vendor is ever updated.
 -->
 <!-- Copyright (c) 2016-2017, 2020 The Linux Foundation. All rights reserved
      Not a Contribution.
