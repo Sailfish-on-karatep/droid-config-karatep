@@ -1,0 +1,58 @@
+[Unit]
+# Make every cpuset created under the v1 root inherit the root's CPUs.
+#
+# Waydroid's container shares the host's cgroup hierarchy. cgroup v1 keeps one
+# hierarchy per controller for the whole kernel, and the container's LXC config
+# has no cgroup namespace (nor can it -- CLONE_NEWCGROUP arrived in Linux 4.6
+# and this kernel is 3.18), so the read-only bind at /sys/fs/cgroup protects
+# only that path. When the container's Android init runs its own
+#
+#   mount cpuset none /dev/cpuset            # system/core/rootdir/init.rc
+#
+# it gets a writable mount of the host's tree, and init.qcom.power.rc's
+# `mkdir /dev/cpuset/camera-daemon` (plus foreground, background, top-app,
+# system-background, restricted) creates those cgroups on the HOST -- with an
+# empty cpuset.cpus, because a new v1 cpuset starts empty and the container's
+# follow-up writes do not stick.
+#
+# That is fatal for the host, not the container. libprocessgroup tolerates a
+# missing cgroup (ENOENT) but treats joining an *empty* cpuset as fatal
+# (ENOSPC), so once camera-daemon exists empty, the next restart of
+# vendor.camera-provider-2-4 -- which is exactly what an Android camera app
+# crashing inside Waydroid causes -- fails forever:
+#
+#   libprocessgroup: Failed to apply CameraServiceCapacity task profile: No space left on device
+#   init: Service 'vendor.camera-provider-2-4' (pid 1522) exited with status 1
+#
+# and Sailfish's own camera is a black viewfinder until the next reboot.
+#
+# cgroup.clone_children makes a newly created cpuset inherit its parent's
+# cpus/mems, and the flag itself propagates to children. Setting it once on the
+# root means anything the container creates comes up with the root's 0-7
+# instead of empty -- including cgroups we have not enumerated. Verified on
+# device: with the flag set, `mkdir /sys/fs/cgroup/cpuset/zz-probe` yields
+# cpus=[0-7] mems=[0] clone=[1].
+#
+# Inheriting 0-7 is deliberate rather than using the device tree's tuned values
+# (camera-daemon 4-7, background 4-6). An all-CPUs cpuset is semantically the
+# same as the "no cpuset exists" state this port has always run with, so this
+# restores the failing join without changing host scheduling behaviour.
+#
+# Runs before droid-hal-init so the flag is set before any Android cgroup is
+# created, whether by droid-hal-init or later by Waydroid.
+#
+# See karatep-port/docs/rca/waydroid-poisons-host-cgroups.md.
+Description=Make new cpusets inherit the root cpuset's CPUs
+DefaultDependencies=no
+After=sysinit.target
+Before=droid-hal-init.service
+Conflicts=shutdown.target actdead.target
+ConditionPathExists=/sys/fs/cgroup/cpuset/cgroup.clone_children
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh -c 'echo 1 > /sys/fs/cgroup/cpuset/cgroup.clone_children'
+
+[Install]
+WantedBy=multi-user.target
