@@ -1,91 +1,70 @@
-# Without this file jolla-camera has nothing to constrain it and picks the
-# largest size the Android HAL advertises -- 3840x2160 on the rear camera,
-# 3264x1836 on the front. Both cameras will happily *capture* at those sizes,
-# but nothing on karatep can encode them. /vendor/etc/media_codecs.xml, which is
-# what MediaCodec actually enforces, caps the hardware encoder at
+# Cap video recording at 1080p.
 #
-#   <MediaCodec name="OMX.qcom.video.encoder.avc" type="video/avc">
-#       <Limit name="size" min="96x96" max="1920x1088" />
+# Without this, jolla-camera records at the largest size the camera HAL
+# advertises -- 3840x2160 on the rear sensor -- and nothing on karatep can
+# encode that. /vendor/etc/media_codecs.xml, which is what MediaCodec actually
+# enforces, caps the hardware encoder at
+#
+#     <MediaCodec name="OMX.qcom.video.encoder.avc" type="video/avc">
+#         <Limit name="size" min="96x96" max="1920x1088" />
 #
 # and the Codec2 software fallback is no better: c2.android.avc.encoder allows
 # max="2048x2048" with block-count 1-8192, against the 240x135 = 32400 blocks
-# 2160p needs, so it returns -EINVAL. droidcamsrc -- which encodes internally
-# via DroidMediaRecorder, so the failure is inside the camera stack rather than
-# downstream of it -- then hits "DroidMediaRecorder: Cannot create codec" and
-# the buffer queue logs "Client wasn't able to handle a received frame" forever.
-# That is the dark viewfinder the moment record is pressed. Capping video at
-# 1080p is what makes the encoder accept the stream (confirmed on device:
-# configureStreamsPerfLocked ... 1920x1080, then "setupVideoEncoder succeeded").
+# 2160p needs, so it returns -EINVAL. 1080p is also Qualcomm's documented
+# ceiling for the Snapdragon 430, and the HAL's own defaults agree with it
+# (video-size=1920x1080, preferred-preview-size-for-video=1920x1080). The
+# 3840x2160 in video-size-values is the ISP's capability, not the encoder's.
 #
-# Do not believe /vendor/etc/media_profiles_V1_0.xml on this point. Its
-# VideoEncoderCap for h264 claims maxFrameWidth="3840" maxFrameHeight="2160",
-# which is simply wrong -- that element is advisory and only the legacy
-# CamcorderProfile path reads it. The CamcorderProfiles in the same file stop at
-# quality="1080p", and its own HFR ceiling is 1920x1080.
+# droidcamsrc encodes internally, via DroidMediaRecorder, so the failure lands
+# inside the camera stack rather than downstream of it: "DroidMediaRecorder:
+# Cannot create codec", then "DroidMediaBufferQueue: Client wasn't able to
+# handle a received frame" forever, and a black viewfinder. Full write-up:
+# karatep-port/docs/rca/camera-dies-on-record.md
 #
-# Everything below is transcribed from the HAL's own parameter dump, read out
-# of both cameras with GST_DEBUG=droidcamsrc:9 -- picture-size-values,
-# preview-size-values, flash-mode-values, focus-mode-values, whitebalance-values
-# and the exposure-compensation range. Stills are left at the sensor's full
-# resolution; only video and the viewfinder are capped.
+# Do not believe /vendor/etc/media_profiles_V1_0.xml here. Its VideoEncoderCap
+# for h264 claims maxFrameWidth="3840" maxFrameHeight="2160", which is wrong --
+# that element is advisory and read only by the legacy CamcorderProfile path.
+# The CamcorderProfiles in the same file stop at quality="1080p".
 #
-# Value lists are Qt enums, not strings:
-#   flashValues          QCameraExposure::FlashMode -- Auto 1, Off 2, On 4, Torch 32
-#   whiteBalanceValues   QCameraImageProcessing::WhiteBalanceMode -- Auto 0,
-#                        Sunlight 2, Cloudy 3, Shade 4, Tungsten 5, Fluorescent 6
-#   focusDistanceValues  QCameraFocus::FocusMode -- Infinity 4, Auto 8,
-#                        Continuous 16, Macro 32
 #
-# Omissions are deliberate. There is no iso-values key in either HAL dump, so
-# no isoValues is published. The front camera reports focus-mode-values=fixed
-# and max-num-focus-areas=0, so it gets no focus keys, and it has no
-# flash-mode-values at all, hence the empty flashValues ("@ai []" is the
-# GVariant empty-array-of-int32 literal -- a bare [] has no type and dconf
-# rejects it).
+# THIS IS THE WHOLE FILE, AND THAT IS DELIBERATE.
+#
+# Ports commonly copy a large jolla-camera-hw.txt from another device, with
+# [apps/jolla-camera/primary/image] sections setting imageResolution,
+# viewfinderResolution, flashValues, whiteBalanceValues, focusDistanceValues,
+# isoValues and so on. On this jolla-camera none of that is read. Verified
+# three ways rather than assumed:
+#
+#   * src/settings.qml in the installed package puts the per-mode
+#     ConfigurationGroup at  position + "/" + captureMode  where position is
+#     "back" or "front" -- so "primary"/"secondary" sections are dead names to
+#     begin with, whatever keys they hold. (Jolla's own stock
+#     jolla-camera.txt still ships primary/secondary. It is equally inert.)
+#   * That group declares only iso, flash, exposureMode, meteringMode, timer
+#     and aspectRatio. Grepping every installed .qml for the resolution and
+#     *Values key names returns nothing.
+#   * Live dconf confirms it: the running app reads and writes [back/image]
+#     and [back/video], and leaves any [primary/*] keys untouched.
+#
+# Resolutions, flash modes, focus modes and white balance are all derived at
+# runtime instead, by CameraConfigs (src/cameraconfigs.cpp) from what
+# QtMultimedia reports, and picked per aspect ratio in CaptureView.qml. The
+# only dconf input to that is the cap below, applied in cameraconfigs.cpp as
+#
+#     QVariant value(MDConfItem("/apps/jolla-camera/maxVideoResolution").value());
+#     QStringList values = value.toString().split('x');
+#
+# which is why it is a 'WIDTHxHEIGHT' string and not a list.
+#
+# The matching /apps/jolla-camera/maxImageResolution exists upstream but is
+# absent from the build installed here, so stills cannot be capped this way --
+# not that they need to be. They already come out at the sensor's full size
+# (rear 4632x3474, front 3264x2448, confirmed on captures taken before this
+# file existed), which is what a 16 MP and an 8 MP sensor should give.
+#
+# Anything added below beyond this key needs to be checked against the
+# installed jolla-camera first. It is very easy to add config here that looks
+# right, changes nothing, and quietly misleads the next person.
 
 [apps/jolla-camera]
 maxVideoResolution='1920x1080'
-
-[apps/jolla-camera/primary/image]
-imageResolution='4320x2432'
-videoResolution='1920x1080'
-viewfinderResolution='1920x1080'
-imageResolution_4_3='4632x3474'
-imageResolution_16_9='4320x2432'
-viewfinderResolution_4_3='1440x1080'
-viewfinderResolution_16_9='1920x1080'
-whiteBalanceValues=[0, 2, 3, 4, 5, 6]
-flashValues=[1, 2, 4]
-focusDistanceValues=[8, 32, 4]
-focusDistance=8
-exposureCompensationValues=[2, 1, 0, -1, -2]
-
-[apps/jolla-camera/secondary/image]
-imageResolution='3264x1836'
-videoResolution='1920x1080'
-viewfinderResolution='1920x1080'
-imageResolution_4_3='3264x2448'
-imageResolution_16_9='3264x1836'
-viewfinderResolution_4_3='1440x1080'
-viewfinderResolution_16_9='1920x1080'
-whiteBalanceValues=[0, 2, 3, 4, 5, 6]
-flashValues=@ai []
-exposureCompensationValues=[2, 1, 0, -1, -2]
-
-[apps/jolla-camera/primary/video]
-imageResolution='4320x2432'
-videoResolution='1920x1080'
-viewfinderResolution='1920x1080'
-whiteBalanceValues=[0, 2, 3, 4, 5, 6]
-flashValues=[2, 32]
-focusDistanceValues=[16, 4]
-focusDistance=16
-exposureCompensationValues=[2, 1, 0, -1, -2]
-
-[apps/jolla-camera/secondary/video]
-imageResolution='3264x1836'
-videoResolution='1920x1080'
-viewfinderResolution='1920x1080'
-whiteBalanceValues=[0, 2, 3, 4, 5, 6]
-flashValues=@ai []
-exposureCompensationValues=[2, 1, 0, -1, -2]
