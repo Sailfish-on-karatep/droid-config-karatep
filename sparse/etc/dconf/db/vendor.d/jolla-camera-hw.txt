@@ -1,0 +1,79 @@
+# Without this file jolla-camera has nothing to constrain it and picks the
+# largest size the Android HAL advertises -- 3840x2160 on the rear camera,
+# 3264x1836 on the front. Both cameras will happily *capture* at those sizes,
+# but nothing on karatep can encode them: the MSM8937 Venus encoder tops out at
+# 1920x1920 and /vendor/etc/media_profiles_V1_0.xml carries no 2160p profile at
+# all, so OMX refuses the port and the software fallback (c2.android.avc.encoder)
+# returns -EINVAL too. droidcamsrc then hits "DroidMediaRecorder: Cannot create
+# codec" and the buffer queue starts logging "Client wasn't able to handle a
+# received frame" forever -- which is the dark viewfinder the moment record is
+# pressed. Capping video at 1080p is what makes the encoder accept the stream
+# (confirmed on device: configureStreamsPerfLocked ... 1920x1080, then
+# "ACodec: setupVideoEncoder succeeded").
+#
+# Everything below is transcribed from the HAL's own parameter dump, read out
+# of both cameras with GST_DEBUG=droidcamsrc:9 -- picture-size-values,
+# preview-size-values, flash-mode-values, focus-mode-values, whitebalance-values
+# and the exposure-compensation range. Stills are left at the sensor's full
+# resolution; only video and the viewfinder are capped.
+#
+# Value lists are Qt enums, not strings:
+#   flashValues          QCameraExposure::FlashMode -- Auto 1, Off 2, On 4, Torch 32
+#   whiteBalanceValues   QCameraImageProcessing::WhiteBalanceMode -- Auto 0,
+#                        Sunlight 2, Cloudy 3, Shade 4, Tungsten 5, Fluorescent 6
+#   focusDistanceValues  QCameraFocus::FocusMode -- Infinity 4, Auto 8,
+#                        Continuous 16, Macro 32
+#
+# Omissions are deliberate. There is no iso-values key in either HAL dump, so
+# no isoValues is published. The front camera reports focus-mode-values=fixed
+# and max-num-focus-areas=0, so it gets no focus keys, and it has no
+# flash-mode-values at all, hence the empty flashValues ("@ai []" is the
+# GVariant empty-array-of-int32 literal -- a bare [] has no type and dconf
+# rejects it).
+
+[apps/jolla-camera]
+maxVideoResolution='1920x1080'
+
+[apps/jolla-camera/primary/image]
+imageResolution='4320x2432'
+videoResolution='1920x1080'
+viewfinderResolution='1920x1080'
+imageResolution_4_3='4632x3474'
+imageResolution_16_9='4320x2432'
+viewfinderResolution_4_3='1440x1080'
+viewfinderResolution_16_9='1920x1080'
+whiteBalanceValues=[0, 2, 3, 4, 5, 6]
+flashValues=[1, 2, 4]
+focusDistanceValues=[8, 32, 4]
+focusDistance=8
+exposureCompensationValues=[2, 1, 0, -1, -2]
+
+[apps/jolla-camera/secondary/image]
+imageResolution='3264x1836'
+videoResolution='1920x1080'
+viewfinderResolution='1920x1080'
+imageResolution_4_3='3264x2448'
+imageResolution_16_9='3264x1836'
+viewfinderResolution_4_3='1440x1080'
+viewfinderResolution_16_9='1920x1080'
+whiteBalanceValues=[0, 2, 3, 4, 5, 6]
+flashValues=@ai []
+exposureCompensationValues=[2, 1, 0, -1, -2]
+
+[apps/jolla-camera/primary/video]
+imageResolution='4320x2432'
+videoResolution='1920x1080'
+viewfinderResolution='1920x1080'
+whiteBalanceValues=[0, 2, 3, 4, 5, 6]
+flashValues=[2, 32]
+focusDistanceValues=[16, 4]
+focusDistance=16
+exposureCompensationValues=[2, 1, 0, -1, -2]
+
+[apps/jolla-camera/secondary/video]
+imageResolution='3264x1836'
+videoResolution='1920x1080'
+viewfinderResolution='1920x1080'
+whiteBalanceValues=[0, 2, 3, 4, 5, 6]
+flashValues=@ai []
+exposureCompensationValues=[2, 1, 0, -1, -2]
