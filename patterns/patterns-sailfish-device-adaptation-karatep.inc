@@ -32,10 +32,17 @@ Requires: qt5-plugin-generic-evdev
 Requires: pulseaudio-modules-droid
 Requires: pulseaudio-modules-droid-hidl
 
-# The -dummy-af is needed for newer devices that run the main
-# audiosystem-passthrough in qti mode (e.g. >=Android 9 Qualcomm),
-# to fix non-responding Camera app and/or voice during a phone call:
-#Requires: audiosystem-passthrough-dummy-af
+# Sailfish has no AudioFlinger -- audio goes through PulseAudio -- but
+# minimediaservice still waits on the media.audio_flinger binder service when a
+# recording starts. Without -dummy-af it never arrives: minimediaservice logs
+# "Waiting for service 'media.audio_flinger'" once a second forever, and since
+# that same process also hosts CameraService, its binder threads park there and
+# every later camera call queues behind them. That, not the encoder, is why the
+# camera app stayed unresponsive until a reboot. -dummy-af answers the lookup
+# with a stub. Note karatep does not run the main passthrough in qti mode (no
+# AUDIOSYSTEM_PASSTHROUGH_TYPE in /etc/sysconfig/pulseaudio, no
+# audiosystem-passthrough.service) -- it is needed here anyway.
+Requires: audiosystem-passthrough-dummy-af
 
 # for audio recording to work:
 Requires: qt5-qtmultimedia-plugin-mediaservice-gstmediacapture
