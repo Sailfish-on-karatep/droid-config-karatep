@@ -1,0 +1,38 @@
+[Unit]
+# The Android vibrator HAL, started only for Waydroid.
+#
+# droid-hal-configs disables it for the host: disabled_services.rc points
+# vendor.vibrator-1-0 at android.hardware.vibrator@1.0-service_HYBRIS_DISABLED,
+# a path that does not exist, so droid-hal-init never starts it. That is right
+# for Sailfish, which drives the vibrator natively through
+# ngfd-plugin-native-vibrator and would otherwise be fighting the HAL for the
+# device.
+#
+# It is wrong for Waydroid. The container's vendor image ships
+# android.hardware.vibrator@1.0-service.waydroid, which is a bridge: it looks
+# the HAL up on the host's /dev/hwbinder and re-exports it on the container's
+# /dev/hwpuddlejumper. With nothing on the host side it registers nothing, so
+# the container's system_server blocks forever in
+#
+#   getService(android.hardware.vibrator@1.0::IVibrator/default)
+#
+# logging "Waited one second for ..." once a second until Watchdog fires
+# WAITED_HALF, kills system_server, and Android restarts -- a boot loop with the
+# bootanimation replaying and sys.boot_completed never set. Verified by
+# experiment: starting this binary by hand made sys.boot_completed flip to 1
+# within a minute and the IVibrator retries stop dead.
+#
+# Deliberately NOT enabled on its own -- there is no [Install] section. It is
+# pulled in by waydroid-container.service.d/50-android-vibrator.conf, so the
+# HAL runs only while Waydroid does and the host keeps its native haptics the
+# rest of the time.
+#
+# See karatep-port/docs/waydroid.md.
+Description=Android vibrator HAL (needed by the Waydroid container)
+Conflicts=shutdown.target actdead.target
+
+[Service]
+Type=simple
+ExecStart=/vendor/bin/hw/android.hardware.vibrator@1.0-service
+Restart=on-failure
+RestartSec=2
