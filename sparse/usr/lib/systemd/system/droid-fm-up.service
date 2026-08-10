@@ -1,0 +1,33 @@
+[Unit]
+# Make the FM SMD transport switch writable by the audio group. See the script for
+# why the switch exists and why the Media app cannot reach it without this.
+#
+# After=droid-hal-init.service is load-bearing, not decoration: init.qcom.rc has
+#
+#   on boot
+#       chown system system /sys/module/radio_iris_transport/parameters/fmsmd_set
+#       chmod 0660 /sys/module/radio_iris_transport/parameters/fmsmd_set
+#
+# so running before droid-hal-init processes `on boot` would just have that chown
+# overwrite ours. multi-user.target is late enough in practice that the ordering
+# holds with room to spare -- verified across a reboot.
+#
+# Unlike droid-config-mido's version of this unit, it is deliberately NOT wanted by
+# bluetooth.service. mido ties FM to bluetooth because its transport was a module
+# that had to be modprobed; ours is built in (CONFIG_RADIO_IRIS_TRANSPORT=y) and
+# this unit only touches a sysfs mode bit. Nothing here talks to WCNSS -- the SMD
+# channel opens later, when the Media app writes the switch -- so there is no boot
+# time contention with bluebinder or wlan-module-load over the shared WCNSS SoC,
+# and no reason to entangle this with the ordering those two already depend on.
+Description=Make the FM SMD transport switch writable by the audio group
+After=droid-hal-init.service
+Conflicts=shutdown.target actdead.target
+ConditionPathExists=/sys/module/radio_iris_transport/parameters/fmsmd_set
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/sh /usr/bin/droid/droid-fm-up.sh
+
+[Install]
+WantedBy=multi-user.target

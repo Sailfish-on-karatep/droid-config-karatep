@@ -1,0 +1,18 @@
+# Give the FM radio V4L2 node to the audio group, per hadk-faq's FM radio section.
+#
+# 999-android-system.rules (generated from the device's ueventd rules) sets
+#
+#   KERNEL=="radio0", MODE="0640", GROUP="system", OWNER="system"
+#
+# which leaves the node unreachable for defaultuser on DAC grounds. In practice the
+# Media app still opens it today, because 70-uaccess.rules tags video4linux for
+# uaccess and logind then ACLs the node to whoever holds the active seat -- but that
+# is a property of the login session, not of the device, and it silently stops being
+# true for anything outside the seat. Pin it explicitly instead.
+#
+# The filename matters: udev applies rules files in lexical order, and
+# "999-droid-fm.rules" sorts after "999-android-system.rules", so this wins.
+#
+# MODE is set here as well as OWNER/GROUP -- hadk-faq's version sets only the latter
+# two and inherits whatever mode ran last, which on this device is not stable.
+KERNEL=="radio[0-9]*", OWNER="audio", GROUP="audio", MODE="0660"
