@@ -31,13 +31,36 @@
 # in, rather than making a kernel parameter world-writable. The audio group is also
 # what hadk-faq's 999-droid-fm.rules gives /dev/radio0, so the two match.
 #
-# Ordering matters: this must run after droid-hal-init has processed init.qcom.rc's
-# `on boot`, or that chown lands afterwards and puts it back to system:system.
-# See droid-fm-up.service.
+# Ordering matters, and systemd ordering alone cannot express it. init.qcom.rc has
+#
+#   on boot
+#       chown system system /sys/module/radio_iris_transport/parameters/fmsmd_set
+#
+# and droid-hal-init.service is Type=simple, so systemd calls it started the moment
+# it forks, while Android init works through `on boot` asynchronously some seconds
+# later. After=droid-hal-init.service therefore buys nothing: measured on device,
+# this unit ran 13 s into boot and init's chown still landed afterwards and put the
+# group back to system.
+#
+# So wait for the chown rather than race it. The kernel creates module parameters
+# root:root -- 532 of the 533 on this device still are -- and the only one that is
+# system:system is this one, because init.qcom.rc is what makes it so. That makes
+# system:system an unambiguous "init has processed `on boot`" signal for exactly the
+# file we care about, so observing it means we are past the chown, not guessing at
+# it. `on boot` runs once, so nothing chowns it back after this point.
+#
+# If the ownership never shows up -- someone dropped the init.qcom.rc block, say --
+# fall through after the timeout and apply anyway rather than leaving FM broken.
 
 set -eu
 
 FMSMD=/sys/module/radio_iris_transport/parameters/fmsmd_set
+
+i=0
+while [ "$(stat -c %U:%G "$FMSMD")" != "system:system" ] && [ "$i" -lt 60 ]; do
+    sleep 1
+    i=$((i + 1))
+done
 
 chgrp audio "$FMSMD"
 chmod 0660 "$FMSMD"

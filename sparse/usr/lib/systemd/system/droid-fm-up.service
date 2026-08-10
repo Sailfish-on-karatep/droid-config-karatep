@@ -2,15 +2,13 @@
 # Make the FM SMD transport switch writable by the audio group. See the script for
 # why the switch exists and why the Media app cannot reach it without this.
 #
-# After=droid-hal-init.service is load-bearing, not decoration: init.qcom.rc has
-#
-#   on boot
-#       chown system system /sys/module/radio_iris_transport/parameters/fmsmd_set
-#       chmod 0660 /sys/module/radio_iris_transport/parameters/fmsmd_set
-#
-# so running before droid-hal-init processes `on boot` would just have that chown
-# overwrite ours. multi-user.target is late enough in practice that the ordering
-# holds with room to spare -- verified across a reboot.
+# After=droid-hal-init.service is necessary but NOT sufficient, which is why the
+# script also waits. droid-hal-init.service is Type=simple, so systemd treats it as
+# started at fork, while init.qcom.rc's `on boot` chown of the parameter happens
+# asynchronously several seconds later. Ordering on the unit alone was tried and
+# measured failing on device: this unit completed 13 s into boot and the chown still
+# landed after it, leaving the parameter system:system. The script blocks until it
+# observes that chown before applying its own -- see the comment there.
 #
 # Unlike droid-config-mido's version of this unit, it is deliberately NOT wanted by
 # bluetooth.service. mido ties FM to bluetooth because its transport was a module
