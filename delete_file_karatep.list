@@ -1,7 +1,10 @@
 # Image paths deleted after our sparse/ tree has been overlaid, one per line.
 # droid-configs.inc applies this last, so it is the sanctioned way to drop a
 # file that comes from the droid-hal-configs submodule.
-
-# Single-slot ("ExpectSlots = slot1") ofono config; karatep is dual-SIM and
-# configures both slots in sparse/etc/ofono/ril_subscription.conf.
-/etc/ofono/binder.conf
+#
+# Because it runs *after* the overlay, anything listed here is removed even if
+# our own sparse/ provides it. /etc/ofono/binder.conf used to be listed, from
+# when this port ran the legacy grilio stack and configured both slots in
+# ril_subscription.conf; that entry silently deleted our own binder.conf once
+# we moved to ofono-binder-plugin. Do not re-add a path here that sparse/ is
+# meant to ship.
