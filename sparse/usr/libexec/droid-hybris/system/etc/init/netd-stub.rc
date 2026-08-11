@@ -1,0 +1,23 @@
+# Stub Netd HAL.
+#
+# Sailfish uses connman, so mer-hybris' droid-hal-configs deliberately disables
+# Android's netd (disabled_services.rc renames it netd_HYBRIS_DISABLED). But
+# Qualcomm's netmgrd on this platform talks to the Netd *HAL*: it links
+# android.system.net.netd@1.1.so and calls V1_1::INetd::getService. With no
+# provider it parks forever on "Looking for Netd service", data ports are never
+# mapped, and dsi_netctrl cannot hand rild a handle -- so every data call dies
+# at "qcril_data_request_setup_data_call: unable to get dsi hndl" and ofono
+# reports "Unexpected data call status 4100".
+#
+# external/stub_netd answers that call with a no-op implementation, which is
+# enough for netmgrd without running real netd, leaving routing to connman.
+#
+# The binary path is the droid-hybris one, not /system/bin/hw: /system here is
+# the read-only LineageOS partition, while droid-hal-device packages
+# out/target/product/karatep/system/bin wholesale into
+# /usr/libexec/droid-hybris/system/bin. Same convention as minimediaservice.
+
+service netd-hal-1-1-stub /usr/libexec/droid-hybris/system/bin/hw/android.system.net.netd@1.1-service.stub
+    class hal
+    user system
+    group system
