@@ -1,6 +1,12 @@
 [Unit]
 # Make the FM SMD transport switch writable by the audio group. See the script for
-# why the switch exists and why the Media app cannot reach it without this.
+# why the switch exists.
+#
+# The Media app no longer depends on this. It runs under sailjail, where /sys is
+# read-only and /sys/module is absent, so it could never write the switch whatever
+# its mode bits said -- which is why FM only ever worked from a shell. The kernel
+# now opens the APPS_FM channel from the v4l ->open instead (b5ea3d9bd494), so this
+# unit exists only for writing the switch by hand while debugging.
 #
 # After=droid-hal-init.service is necessary but NOT sufficient, which is why the
 # script also waits. droid-hal-init.service is Type=simple, so systemd treats it as
@@ -14,7 +20,7 @@
 # bluetooth.service. mido ties FM to bluetooth because its transport was a module
 # that had to be modprobed; ours is built in (CONFIG_RADIO_IRIS_TRANSPORT=y) and
 # this unit only touches a sysfs mode bit. Nothing here talks to WCNSS -- the SMD
-# channel opens later, when the Media app writes the switch -- so there is no boot
+# channel opens later, on first open of /dev/radio0 -- so there is no boot
 # time contention with bluebinder or wlan-module-load over the shared WCNSS SoC,
 # and no reason to entangle this with the ordering those two already depend on.
 Description=Make the FM SMD transport switch writable by the audio group
