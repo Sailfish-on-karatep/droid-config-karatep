@@ -78,7 +78,20 @@ Requires: rfkill
 Requires: geoclue-provider-hybris
 
 # Telephony
-Requires: ofono-ril-binder-plugin
+#
+# ofono-binder-plugin replaces the legacy grilio stack (it Obsoletes and
+# Conflicts both ofono-ril-plugin and ofono-ril-binder-plugin, so this is a
+# straight swap, not a coexistence). The reason for the move is VoLTE: IMS
+# extensions load only into ofono-binder-plugin, via libofonobinderpluginext,
+# so on the old stack ofono never publishes org.ofono.IpMultimediaSystem no
+# matter what the hardware offers. Configuration moves from
+# ril_subscription.conf to binder.conf.
+Requires: ofono-binder-plugin
+
+# VoLTE. Drives vendor.qti.hardware.radio.ims@1.0::IImsRadio, which this
+# device's vendor partition provides and registers (imsradio0 and imsradio1).
+# Selected by extPlugin=qti in binder.conf.
+Requires: ofono-binder-plugin-ext-qti
 
 # Bluetooth
 Requires: bluebinder
