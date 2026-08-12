@@ -1,0 +1,35 @@
+[Unit]
+# Stage the modem's software carrier configs, with IMS switched on.
+#
+# /vendor/bin/init.qcom.sh cannot do this on karatep: it copies from a
+# modem_pr/mcfg/configs tree this modem image does not have, sets
+# ro.vendor.ril.mbn_copy_completed=1 regardless, and rm -rf's the target
+# directory on every boot. Without this unit the modem runs with no carrier
+# configuration at all, and qcril believes the copy succeeded.
+#
+# After=droid-hal-init.service is necessary but not sufficient, the same way it
+# is for droid-fm-up.service: droid-hal-init is Type=simple so systemd treats
+# it as started at fork, while init.qcom.sh's rm -rf happens asynchronously
+# afterwards. Staging into a directory that is about to be deleted would be
+# worse than not staging at all, so the script waits for
+# ro.vendor.ril.mbn_copy_completed -- which init.qcom.sh sets when it is done
+# with that directory -- rather than trusting unit ordering.
+#
+# The work is done once per install, not once per boot. The modem keeps an
+# activated configuration across reboots, so the script checks its marker and
+# persist.vendor.radio.sw_mbn_loaded and exits immediately on later boots. That
+# also means the one rild restart it needs is paid once.
+#
+# See karatep-port docs/rca/volte-registration-change-is-test-mode.md.
+Description=Stage modem carrier configuration with IMS enabled
+After=droid-hal-init.service
+Conflicts=shutdown.target actdead.target
+ConditionPathIsDirectory=/vendor/firmware_mnt/image
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/python3 /usr/bin/droid/karatep-modem-config.py
+
+[Install]
+WantedBy=multi-user.target
