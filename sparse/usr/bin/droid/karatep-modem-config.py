@@ -250,6 +250,21 @@ def main():
     setprop("persist.vendor.radio.sw_mbn_update", "1")
     setprop("persist.vendor.radio.sw_mbn_loaded", "0")
 
+    # Stop qcril throwing away the network's own VoLTE indication.
+    #
+    # The modem reports voice_support_on_lte = 1 -- the network really does
+    # signal IMS voice over PS for this SIM -- and qcril then discards it:
+    #
+    #   qcril_qmi_nas_request_registration_state: voice_support_on_lte val 1
+    #   ..._convert_nas_srv_status_to_ril_reg_status:
+    #       is voice supported on lte dyn 0, setting 0
+    #
+    # Both of its own gates default off because these two properties ship
+    # empty, so nothing above the RIL is ever told the network supports VoLTE.
+    # With them set the same line reads "dyn 1, setting 1".
+    setprop("persist.vendor.radio.voice_on_lte", "1")
+    setprop("persist.vendor.radio.vdp_on_ims_cap", "1")
+
     os.makedirs(os.path.dirname(MARKER), exist_ok=True)
     with open(MARKER, "w") as f:
         f.write("%d\n" % MARKER_VERSION)
